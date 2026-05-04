@@ -19,8 +19,7 @@ This application enables multiple users to communicate instantly through a share
 - 📡 Communication using **STOMP messaging protocol**
 - 🧠 Backend powered by **Spring Boot**
 - 🎨 Dynamic frontend using **Thymeleaf**
-- 🌌 Modern UI with animated **Aurora background**
-- ❄ Snowfall and star animations
+- 🌌 Modern UI 
 - 👥 Multi-user chat support
 - 📦 Dockerized deployment
 - ☁ Cloud deployment using **Render**
