@@ -8,25 +8,23 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "chat_messages")
-public class ChatMessage {
+@Table(name = "files")
+public class FileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String sender;
+    private String fileName;
 
-    @Column(length = 2000)
-    private String content;
+    private String fileType;
 
-    private Long roomId;
+    @Lob
+    private byte[] data;
 
-    private LocalDateTime timestamp;
+    private LocalDateTime uploadedAt;
 
     @PrePersist
     protected void onCreate() {
-        if (this.timestamp == null) {
-            this.timestamp = LocalDateTime.now();
-        }
+        this.uploadedAt = LocalDateTime.now();
     }
 }
