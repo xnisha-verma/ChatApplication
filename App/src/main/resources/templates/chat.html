@@ -2,176 +2,664 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Realtime Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.1/stomp.min.js"></script>
     <style>
-        body{
-            margin:0;
-            font-family: "Segoe UI", sans-serif;
-            background:#020617;
-            overflow:hidden;
+        :root {
+            --bg-color: #050511;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-gradient: linear-gradient(135deg, #38bdf8, #818cf8);
+            --accent-glow: rgba(56, 189, 248, 0.4);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
         }
-        /* Aurora Glow Background */
-        body::before{
-            content:"";
-            position:fixed;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            background:
-                    radial-gradient(circle at 20% 30%, rgba(34,197,94,0.35), transparent 40%),
-                    radial-gradient(circle at 80% 20%, rgba(16,185,129,0.25), transparent 40%),
-                    radial-gradient(circle at 50% 80%, rgba(22,163,74,0.30), transparent 50%);
-            filter: blur(120px);
-            animation: auroraMove 18s ease-in-out infinite alternate;
-            z-index:-3;
+
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-        /* Star Layer */
-        body::after{
-            content:"";
-            position:fixed;
-            width:100%;
-            height:100%;
-            background-image:
-                    radial-gradient(2px 2px at 20px 30px,#ffffff,transparent),
-                    radial-gradient(2px 2px at 200px 150px,#ffffff,transparent),
-                    radial-gradient(1px 1px at 300px 250px,#ffffff,transparent),
-                    radial-gradient(2px 2px at 500px 350px,#ffffff,transparent),
-                    radial-gradient(1px 1px at 600px 100px,#ffffff,transparent);
-            background-size:600px 600px;
-            opacity:0.5;
-            z-index:-2;
+
+        /* Animated Background Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out alternate;
         }
-        /* Aurora movement */
-        @keyframes auroraMove{
-            0%{
-                transform:translateX(-30px) translateY(0px);
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(56, 189, 248, 0.15);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(129, 140, 248, 0.15);
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+        
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: rgba(167, 139, 250, 0.12);
+            top: 40%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -40px) scale(1.1); }
+            100% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Glassmorphism Container */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Input Styling */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .glass-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Buttons */
+        .btn-send {
+            background: var(--accent-gradient);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+        }
+        .btn-send:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+        }
+        .btn-send:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        .btn-icon {
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .btn-icon:hover {
+            color: white;
+        }
+
+        /* Connection Status */
+        .status-dot {
+            transition: all 0.3s ease;
+        }
+        .status-dot.online { background-color: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.6); }
+        .status-dot.offline { background-color: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }
+        .status-dot.connecting { background-color: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.6); }
+
+        /* Media Picker (Emoji & Sticker) */
+        .media-picker {
+            position: absolute;
+            bottom: 85px;
+            right: 24px;
+            width: 300px;
+            height: 350px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 50;
+        }
+        .media-picker.active {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .picker-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .picker-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s, border-bottom 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .picker-tab.active {
+            color: white;
+            border-bottom: 2px solid #38bdf8;
+        }
+
+        .picker-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: none;
+        }
+        .picker-content.active {
+            display: grid;
+        }
+        
+        #emoji-grid {
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+        .emoji-item {
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        .emoji-item:hover {
+            transform: scale(1.3);
+        }
+
+        #sticker-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .sticker-item {
+            width: 100%;
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+        }
+        .sticker-item:hover {
+            transform: scale(1.1);
+            background: rgba(255,255,255,0.1);
+        }
+        .sticker-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Message Animations & Bubbles */
+        .message-wrap {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 16px;
+            animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
-            50%{
-                transform:translateX(40px) translateY(-20px);
-            }
-            100%{
-                transform:translateX(-40px) translateY(20px);
-            }
         }
-        /* Snow Layer */
-        .snow{
-            position:fixed;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            pointer-events:none;
-            z-index:-1;
+        
+        .message-content-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            max-width: 85%;
         }
-        .snow span{
-            position:absolute;
-            top:-10px;
-            width:4px;
-            height:4px;
-            background:white;
-            border-radius:50%;
-            opacity:0.8;
-            animation:snowFall linear infinite;
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            text-transform: uppercase;
         }
-        @keyframes snowFall{
-            0%{
-                transform:translateY(-10px);
-            }
-            100%{
-                transform:translateY(100vh);
-            }
+
+        .message-bubble {
+            padding: 10px 16px;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        /* Glass Chat Container */
-        .chat-container{
-            backdrop-filter: blur(16px);
-            background: rgba(255,255,255,0.08);
-            border-radius: 20px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+        
+        .message-sticker {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+            background: transparent;
+            padding: 0;
+            box-shadow: none;
+            border: none !important;
         }
-        /* Message bubble */
-        .message{
-            padding:8px 14px;
-            border-radius:12px;
-            margin-bottom:6px;
-            max-width:75%;
-            word-wrap:break-word;
+
+        .msg-own {
+            align-items: flex-end;
+        }
+        .msg-own .message-content-wrapper {
+            flex-direction: row-reverse;
+        }
+        .msg-own .message-bubble:not(.message-sticker) {
+            background: var(--accent-gradient);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+
+        .msg-other {
+            align-items: flex-start;
+        }
+        .msg-other .message-bubble:not(.message-sticker) {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-radius: 18px 18px 18px 4px;
+        }
+        
+        .sender-name {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        
+        .msg-own .sender-name {
+            margin-right: 42px; /* avatar width + gap */
+        }
+        .msg-other .sender-name {
+            margin-left: 42px; /* avatar width + gap */
+        }
+
+        .timestamp {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .msg-own .timestamp {
+            margin-right: 42px;
+            text-align: right;
+        }
+        .msg-other .timestamp {
+            margin-left: 42px;
+        }
+
+        /* Header Glow */
+        .header-glow {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
         }
     </style>
 </head>
 <body>
-<div class="snow" id="snow"></div>
-<div class="flex justify-center items-center min-h-screen">
-    <div class="chat-container w-[420px] p-5">
-        <h1 class="text-white text-2xl font-bold text-center mb-4">
-            💬 Realtime Chat
-        </h1>
-        <div id="chat"
-             class="h-[320px] overflow-y-auto flex flex-col p-3 bg-white/10 rounded-lg mb-4 text-white">
+
+    <!-- Background Elements -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Main Container -->
+    <div class="glass-panel w-[90%] max-w-[440px] h-[650px] max-h-[90vh] flex flex-col p-6 relative overflow-hidden">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+            <h1 class="text-2xl font-bold header-glow flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                </svg>
+                Nexus
+            </h1>
+            <div class="flex items-center gap-2">
+                <span id="statusDot" class="w-2.5 h-2.5 rounded-full status-dot connecting animate-pulse"></span>
+                <span id="statusText" class="text-xs font-medium text-amber-400">Connecting...</span>
+            </div>
         </div>
-        <input id="senderInput"
-               class="w-full p-2 mb-2 rounded bg-white/20 text-white placeholder-gray-300"
-               placeholder="Your name"/>
-        <div class="flex gap-2">
-            <input id="messageInput"
-                   class="flex-1 p-2 rounded bg-white/20 text-white placeholder-gray-300"
-                   placeholder="Type message..."/>
-            <button id="sendMessage"
-                    class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">
-                Send
-            </button>
+
+        <!-- Chat Area -->
+        <div id="chat" class="flex-1 overflow-y-auto pr-2 mb-4 flex flex-col scroll-smooth">
+            <div class="text-center text-xs text-slate-500 my-4 uppercase tracking-wider">Welcome to Nexus Chat</div>
+        </div>
+
+        <!-- Media Picker -->
+        <div id="mediaPicker" class="media-picker">
+            <div class="picker-tabs">
+                <div class="picker-tab active" onclick="switchTab('emoji')">Emojis</div>
+                <div class="picker-tab" onclick="switchTab('sticker')">Stickers</div>
+            </div>
+            <div id="emoji-grid" class="picker-content active">
+                <!-- Injected via JS -->
+            </div>
+            <div id="sticker-grid" class="picker-content">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="mt-auto relative">
+            <div class="mb-3">
+                <input id="senderInput" type="text" class="glass-input w-full px-4 py-2.5 rounded-xl text-sm" placeholder="Enter your display name" />
+            </div>
+            
+            <div class="flex gap-2 items-center bg-white/5 p-1.5 rounded-2xl border border-white/10 focus-within:border-sky-400/50 focus-within:bg-white/10 transition-all duration-300">
+                <button id="togglePicker" class="btn-icon p-2 ml-1" title="Emojis & Stickers">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+                <input id="messageInput" type="text" class="flex-1 bg-transparent border-none text-white px-2 py-2 text-sm focus:outline-none placeholder-slate-400" placeholder="Type your message..." onkeypress="handleKeyPress(event)" />
+                <button id="sendMessage" class="btn-send p-2.5 rounded-xl flex items-center justify-center group" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
-</div>
-<script>
-    /* Snow particles generator */
-    const snowContainer = document.getElementById("snow");
-    for(let i=0;i<120;i++){
-    let snow = document.createElement("span");
-    snow.style.left = Math.random()*100 + "vw";
-    snow.style.animationDuration = (4 + Math.random()*15) + "s";
-    snow.style.opacity = Math.random();
-    snow.style.transform = "scale(" + Math.random() + ")";
-    snowContainer.appendChild(snow);
-    }
-    /* WebSocket Chat Logic */
-    let stompClient = null;
-    function setConnected(connected){
-    document.getElementById('sendMessage').disabled = !connected;
-    }
-    function connect(){
-    var socket = new SockJS('/chat');
-    stompClient = Stomp.over(socket);
-    stompClient.connect({}, function(frame){
-    setConnected(true);
-    stompClient.subscribe('/topic/messages', function(message){
-    showMessage(JSON.parse(message.body));
-    });
-    });
-    }
-    function showMessage(message){
-    var chat = document.getElementById('chat');
-    var messageElement = document.createElement('div');
-    messageElement.className = "message bg-white/20";
-    messageElement.textContent = message.sender + ": " + message.content;
-    chat.appendChild(messageElement);
-    chat.scrollTop = chat.scrollHeight;
-    }
-    function sendMessage(){
-    var sender = document.getElementById('senderInput').value;
-    var content = document.getElementById('messageInput').value;
-    var chatMessage = {
-    sender: sender,
-    content: content
-    };
-    stompClient.send("/app/sendMessage", {}, JSON.stringify(chatMessage));
-    document.getElementById('messageInput').value ='';
-    }
-    document.getElementById('sendMessage').onclick = sendMessage;
-    window.onload = connect;
-</script>
+
+    <script>
+        let stompClient = null;
+        const chatContainer = document.getElementById('chat');
+        const sendBtn = document.getElementById('sendMessage');
+        const messageInput = document.getElementById('messageInput');
+        const senderInput = document.getElementById('senderInput');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const mediaPicker = document.getElementById('mediaPicker');
+        const togglePickerBtn = document.getElementById('togglePicker');
+
+        // --- Picker Logic ---
+        const emojis = ['😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','ร้อน','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🫢','🫡','🤫','🫠','🤥','😶','🫥','😐','🫤','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','👋','🤚','🖐','✋','🖖','🫱','🫲','🫳','🫴','👌','🤌','🤏','✌️','🤞','🫰','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁','👅','👄','💋','🩸'];
+        // Using high-quality animated Google Noto Emojis as stickers
+        const stickers = [
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f923/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/2764_fe0f/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f4af/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f62d/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f973/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f60e/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f440/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f92f/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f480/512.gif',
+            'https://fonts.gstatic.com/s/e/notoemoji/latest/1f608/512.gif'
+        ];
+
+        function initPicker() {
+            const emojiGrid = document.getElementById('emoji-grid');
+            emojis.forEach(emoji => {
+                const el = document.createElement('div');
+                el.className = 'emoji-item';
+                el.textContent = emoji;
+                el.onclick = () => {
+                    messageInput.value += emoji;
+                    validateInputs();
+                    messageInput.focus();
+                };
+                emojiGrid.appendChild(el);
+            });
+
+            const stickerGrid = document.getElementById('sticker-grid');
+            stickers.forEach(url => {
+                const el = document.createElement('div');
+                el.className = 'sticker-item';
+                const img = document.createElement('img');
+                img.src = url;
+                el.appendChild(img);
+                el.onclick = () => {
+                    sendDirectMessage(`[STICKER:${url}]`);
+                    mediaPicker.classList.remove('active');
+                };
+                stickerGrid.appendChild(el);
+            });
+        }
+
+        togglePickerBtn.onclick = (e) => {
+            e.stopPropagation();
+            mediaPicker.classList.toggle('active');
+        };
+
+        // Close picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mediaPicker.contains(e.target) && e.target !== togglePickerBtn) {
+                mediaPicker.classList.remove('active');
+            }
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.picker-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.picker-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId + '-grid').classList.add('active');
+        }
+
+        initPicker();
+        // ------------------
+
+        function validateInputs() {
+            if (stompClient && stompClient.connected && senderInput.value.trim() !== '' && messageInput.value.trim() !== '') {
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.disabled = true;
+            }
+        }
+
+        senderInput.addEventListener('input', validateInputs);
+        messageInput.addEventListener('input', validateInputs);
+
+        function updateStatus(status) {
+            statusDot.className = 'w-2.5 h-2.5 rounded-full status-dot';
+            if (status === 'connected') {
+                statusDot.classList.add('online');
+                statusText.textContent = 'Live';
+                statusText.className = 'text-xs font-medium text-emerald-400';
+            } else if (status === 'connecting') {
+                statusDot.classList.add('connecting', 'animate-pulse');
+                statusText.textContent = 'Connecting...';
+                statusText.className = 'text-xs font-medium text-amber-400';
+            } else {
+                statusDot.classList.add('offline');
+                statusText.textContent = 'Offline';
+                statusText.className = 'text-xs font-medium text-red-400';
+            }
+            validateInputs();
+        }
+
+        function getAvatarColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 65%, 45%)`;
+        }
+
+        function connect() {
+            updateStatus('connecting');
+            const socket = new SockJS('/chat');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.debug = null; 
+            
+            stompClient.connect({}, function (frame) {
+                updateStatus('connected');
+                stompClient.subscribe('/topic/messages', function (message) {
+                    showMessage(JSON.parse(message.body));
+                });
+            }, function(error) {
+                console.error("Connection error: ", error);
+                updateStatus('offline');
+                setTimeout(connect, 5000);
+            });
+        }
+
+        function showMessage(message) {
+            const currentUser = senderInput.value.trim();
+            const isOwnMessage = message.sender === currentUser;
+            const senderName = message.sender || "Unknown";
+            const initial = senderName.charAt(0);
+            
+            const wrap = document.createElement('div');
+            wrap.className = `message-wrap ${isOwnMessage ? 'msg-own' : 'msg-other'}`;
+            
+            if (!isOwnMessage) {
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'sender-name';
+                nameLabel.textContent = senderName;
+                wrap.appendChild(nameLabel);
+            }
+            
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'message-content-wrapper';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = initial;
+            if (!isOwnMessage) {
+                avatar.style.backgroundColor = getAvatarColor(senderName);
+            } else {
+                avatar.style.background = 'var(--accent-gradient)';
+            }
+            contentWrapper.appendChild(avatar);
+            
+            // Check if message is a sticker
+            if (message.content.startsWith('[STICKER:') && message.content.endsWith(']')) {
+                const url = message.content.substring(9, message.content.length - 1);
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'message-bubble message-sticker';
+                contentWrapper.appendChild(img);
+            } else {
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                bubble.innerHTML = message.content.replace(urlRegex, '<a href="$1" target="_blank" class="underline text-sky-200 hover:text-white">$1</a>');
+                contentWrapper.appendChild(bubble);
+            }
+            
+            wrap.appendChild(contentWrapper);
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            timestamp.textContent = time;
+            wrap.appendChild(timestamp);
+            
+            chatContainer.appendChild(wrap);
+            
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function sendDirectMessage(contentOverride) {
+            const sender = senderInput.value.trim();
+            if (sender && stompClient && stompClient.connected) {
+                const chatMessage = {
+                    sender: sender,
+                    content: contentOverride
+                };
+                stompClient.send("/app/sendMessage", {}, JSON.stringify(chatMessage));
+            }
+        }
+
+        function sendMessage() {
+            const sender = senderInput.value.trim();
+            const content = messageInput.value.trim();
+            
+            if (sender && content && stompClient && stompClient.connected) {
+                sendDirectMessage(content);
+                messageInput.value = '';
+                validateInputs(); 
+                messageInput.focus();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (!sendBtn.disabled) {
+                    sendMessage();
+                }
+            }
+        }
+
+        sendBtn.onclick = sendMessage;
+        window.onload = connect;
+    </script>
 </body>
 </html>
